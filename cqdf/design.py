@@ -1,7 +1,8 @@
 import os
 import sys
-from importlib import import_module
+from importlib import import_module, reload
 from multiprocessing.connection import Connection
+from multiprocessing.queues import SimpleQueue
 from typing import NoReturn, TypeVar
 
 from cadquery import Shape, exporters
@@ -13,18 +14,33 @@ _child_connection: Connection | None = None
 _is_dev: bool = True
 
 
-def _load_design(file: str, connection: Connection):  # type: ignore
+class TerminateEvaluationException(Exception):
+    ...
+
+
+def _load_design(paths: SimpleQueue[str], connection: Connection):  # type: ignore
     """
-    Entry for sub-process when evaluating a design
+    Entry for sub-process when evaluating a design through the driver
     """
     global _child_connection, _is_dev
     _child_connection = connection
     _is_dev = False
 
-    # TODO: many ways this can fail
-    directory, module = os.path.split(os.path.abspath(file))
-    sys.path.append(directory)
-    import_module(module.replace(".py", ""))
+    module = None
+
+    while path := paths.get():
+        # TODO: many ways this can fail
+        directory, file = os.path.split(os.path.abspath(path))
+        sys.path.append(directory)
+        module_name = file.removesuffix(".py")
+
+        try:
+            if module is None:
+                module = import_module(module_name)
+            else:
+                reload(module)
+        except TerminateEvaluationException:
+            continue
 
 
 TDP = TypeVar("TDP", bound=DesignParameters)
@@ -55,7 +71,10 @@ def user_input(param_cls: type[TDP]) -> TDP:
         ]
 
         _child_connection.send(parameter_ex)
-        res_params: list[ParameterValueResponse] = _child_connection.recv()
+        res_params: list[ParameterValueResponse] | None = _child_connection.recv()
+
+        if res_params is None:
+            raise TerminateEvaluationException()
 
         apply_response(design_params, res_params)
 
@@ -77,8 +96,8 @@ def finish(obj: Shape | None) -> NoReturn:
             raise ValueError("No connection to driver.")
 
         _child_connection.send(obj)
+        raise TerminateEvaluationException()
     elif obj:
         # TODO: figure out what to do if local
         exporters.export(obj, "out.step", exportType="STEP")  # type: ignore
-
     raise SystemExit()

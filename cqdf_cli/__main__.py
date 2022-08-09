@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 
 from cadquery import exporters
-from cqdf.driver import finish_evaluate, start_evaluate, terminate_evaluate
+from cqdf.driver import Evaluation, Session
 from cqdf.interface import ParameterValueResponse
 from cqdf.util import JSONCustomEncoder
 from path import Path
@@ -42,34 +42,37 @@ if not (
     raise FileNotFoundError("No such file", cli_args.input)
 
 # Evaluate
-rid, params = start_evaluate(cli_args.input)
-match cli_args:
-    case ParseCLIArgs():
-        terminate_evaluate(rid)
+with Session() as session:
 
-        if cli_args.json:
-            print_json(JSONCustomEncoder().encode(params))
-        else:
-            richprint(describe_parameters(params))
+    evaluation = Evaluation(cli_args.input, session)
+    match cli_args:
+        case ParseCLIArgs():
+            params = evaluation.start_params()
 
-    case ExecuteCLIArgs():
-        param_group = exec_parser.add_argument_group("Parameters")
+            if cli_args.json:
+                print_json(JSONCustomEncoder().encode(params))
+            else:
+                richprint(describe_parameters(params))
 
-        for p in params:
-            param_group.add_argument(
-                f"--{PARAM_PREFIX}{p.key}",
-                required=False,
-                type=p.value.vtype.value,
-                default=p.value.value,
-            )
-        exec_params = vars(parser.parse_args())
+        case ExecuteCLIArgs():
+            params = evaluation.start()
 
-        res_params = [
-            ParameterValueResponse(key.removeprefix(PARAM_PREFIX), exec_params[key])
-            for key in exec_params
-            if key.startswith(PARAM_PREFIX)
-        ]
+            param_group = exec_parser.add_argument_group("Parameters")
+            for p in params:
+                param_group.add_argument(
+                    f"--{PARAM_PREFIX}{p.key}",
+                    required=False,
+                    type=p.value.vtype.value,
+                    default=p.value.value,
+                )
+            exec_params = vars(parser.parse_args())
 
-        shape = finish_evaluate(rid, res_params)
-        if shape:
-            exporters.export(shape, cli_args.out)  # type: ignore
+            res_params = [
+                ParameterValueResponse(key.removeprefix(PARAM_PREFIX), exec_params[key])
+                for key in exec_params
+                if key.startswith(PARAM_PREFIX)
+            ]
+
+            shape = evaluation.finish(res_params)
+            if shape:
+                exporters.export(shape, cli_args.out)  # type: ignore

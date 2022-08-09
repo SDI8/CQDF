@@ -24,7 +24,7 @@ def describe_parameters(params: list[ParameterValue]):
                 else f"({p.value.unit.name})"
             ),
             p.value.vtype.name,
-            p.value.category.name if p.value.category else "",
+            p.value.category.name if p.value.category else "(Default)",
         )
 
     return table
