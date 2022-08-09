@@ -12,8 +12,6 @@ from .interface import ParameterValue, ParameterValueResponse
 
 register()
 
-FINISH_TIMEOUT = 5
-
 
 class Session:
     process: Process

@@ -1,3 +1,4 @@
+import sys
 from argparse import ArgumentParser
 
 from cadquery import exporters
@@ -16,20 +17,44 @@ PARAM_PREFIX = "p:"
 
 # Set up Argparse
 parser = ArgumentParser(
-    "cqdf_cli", description="CadQuery Design Format CLI", exit_on_error=False
+    "cqdf_cli", description="CadQuery Design Format CLI", exit_on_error=True
 )
 sub_parsers = parser.add_subparsers(title="Sub command", required=True, dest="command")
 
 ## Params Command
 params_parser = sub_parsers.add_parser("params")
-params_parser.add_argument("input", type=Path, help="The file to get parameters for")
+params_parser.add_argument(
+    "input",
+    nargs="?",
+    type=Path,
+    default=sys.stdin,
+    help="The file to get parameters for",
+)
 params_parser.add_argument("-j", "--json", action="store_true", help="Format as json")
 
 ## Execute Command
 exec_parser = sub_parsers.add_parser("execute")
-exec_parser.add_argument("input", type=Path, help="The file to execute")
 exec_parser.add_argument(
-    "-o", "--out", type=Path, default="out.step", help="Output file path"
+    "input",
+    nargs="?",
+    type=Path,
+    default=sys.stdin,
+    help="The file to execute",
+)
+exec_parser.add_argument(
+    "-o",
+    "--out",
+    nargs="?",
+    type=Path,
+    default="out.step",
+    help="Output file path",
+)
+exec_parser.add_argument(
+    "--p:<name>",
+    required=False,
+    nargs="*",
+    dest="value",
+    help="Set a specific parameter value. Use `params` to see valid parameter names",
 )
 
 cli_args = from_ns(parser.parse_known_args()[0])
