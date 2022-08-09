@@ -2,7 +2,7 @@
 
 Structure your CADQuery scripts as proper parametric designs. Define and constrain parameters explicitly, without magic and with full type support, and evaluate the design in whatever way suits you best - directly as a python file or through any application implementing the CQDF Driver.
 
-This repository is in its early days. Expect neither conda envs, tests nor documentation.
+This repository is in its early days. Expect neither tests nor documentation.
 
 ## Why not CADQuery Gateway Interface?
 

@@ -1,0 +1,11 @@
+name: cqdf
+channels:
+  - cadquery
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - cadquery=master=py3.10
+  - rich=12.5.1
+  - dacite=1.6.0
+  - black

@@ -2,6 +2,7 @@ import multiprocessing
 from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection
 from multiprocessing.queues import SimpleQueue
+from pathlib import Path
 from typing import Any
 
 from cadquery import Shape
@@ -16,7 +17,7 @@ register()
 class Session:
     process: Process
     connection: Connection
-    queue: SimpleQueue[str]
+    queue: SimpleQueue[Path]
 
     def __init__(self) -> None:
         ...
@@ -41,7 +42,7 @@ class Session:
         self.queue.close()
         self.process.terminate()
 
-    def add(self, path: str):
+    def add(self, path: Path):
         self.queue.put(path)
 
 
@@ -50,7 +51,7 @@ class Evaluation:
     parameters: list[ParameterValue] | None = None
     result: Shape | None = None
 
-    def __init__(self, path: str, session: Session) -> None:
+    def __init__(self, path: Path, session: Session) -> None:
         self.path = path
         self.session = session
 

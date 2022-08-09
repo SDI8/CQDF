@@ -1,9 +1,9 @@
 from argparse import Namespace
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Literal
 
 from dacite.core import from_dict
-from path import Path
 
 
 def from_ns(ns: Namespace):

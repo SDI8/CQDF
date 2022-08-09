@@ -3,6 +3,7 @@ import sys
 from importlib import import_module, reload
 from multiprocessing.connection import Connection
 from multiprocessing.queues import SimpleQueue
+from pathlib import Path
 from typing import NoReturn, TypeVar
 
 from cadquery import Shape, exporters
@@ -18,7 +19,7 @@ class TerminateEvaluationException(Exception):
     ...
 
 
-def _load_design(paths: SimpleQueue[str], connection: Connection):  # type: ignore
+def _load_design(paths: SimpleQueue[Path], connection: Connection):  # type: ignore
     """
     Entry for sub-process when evaluating a design through the driver
     """
@@ -28,15 +29,11 @@ def _load_design(paths: SimpleQueue[str], connection: Connection):  # type: igno
 
     module = None
 
-    while path := paths.get():
-        # TODO: many ways this can fail
-        directory, file = os.path.split(os.path.abspath(path))
-        sys.path.append(directory)
-        module_name = file.removesuffix(".py")
-
+    while path := paths.get().absolute():
+        sys.path.append(str(path.parent))
         try:
             if module is None:
-                module = import_module(module_name)
+                module = import_module(path.stem)
             else:
                 reload(module)
         except TerminateEvaluationException:

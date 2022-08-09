@@ -1,11 +1,10 @@
-import sys
 from argparse import ArgumentParser
+from pathlib import Path
 
 from cadquery import exporters
 from cqdf.driver import Evaluation, Session
 from cqdf.interface import ParameterValueResponse
 from cqdf.util import JSONCustomEncoder
-from path import Path
 from rich import print as richprint
 from rich import print_json
 
@@ -27,7 +26,6 @@ params_parser.add_argument(
     "input",
     nargs="?",
     type=Path,
-    default=sys.stdin,
     help="The file to get parameters for",
 )
 params_parser.add_argument("-j", "--json", action="store_true", help="Format as json")
@@ -38,7 +36,6 @@ exec_parser.add_argument(
     "input",
     nargs="?",
     type=Path,
-    default=sys.stdin,
     help="The file to execute",
 )
 exec_parser.add_argument(
@@ -59,12 +56,13 @@ exec_parser.add_argument(
 
 cli_args = from_ns(parser.parse_known_args()[0])
 
+
 if not (
     cli_args.input.exists()
-    and cli_args.input.isfile()
-    and cli_args.input.endswith(".py")
+    and cli_args.input.is_file()
+    and cli_args.input.suffix == ".py"
 ):
-    raise FileNotFoundError("No such file", cli_args.input)
+    raise FileNotFoundError("Invalid file", cli_args.input)
 
 # Evaluate
 with Session() as session:
@@ -100,4 +98,4 @@ with Session() as session:
 
             shape = evaluation.finish(res_params)
             if shape:
-                exporters.export(shape, cli_args.out)  # type: ignore
+                exporters.export(shape, str(cli_args.out))  # type: ignore

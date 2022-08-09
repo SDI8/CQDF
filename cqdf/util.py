@@ -25,9 +25,6 @@ def first(iterable: Iterable[T], condition: Callable[[T], bool]):
     )
 
 
-value = first([1, 2, 3, 4, 5.5], lambda x: x > 2)
-
-
 class JSONCustomEncoder(JSONEncoder):
     def default(self, o: Any) -> Any:
         if isinstance(o, Enum):
